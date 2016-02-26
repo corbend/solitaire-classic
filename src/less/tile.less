@@ -1,0 +1,64 @@
+@anim-width: -57.8px;
+
+.tile {
+	color: white;
+	border: 1px solid darken(@tile-background-color, 20%);
+	border-radius: 4px;	
+	margin: 6px;
+	width: @tile-width - 2px;
+	height: @tile-width - 2px;
+	background: @tile-background-color;
+	padding: 0px;
+	text-align: center;
+	vertical-align: middle;
+	cursor: pointer;
+	&:nth-child(4n) {
+		margin-right: 2px;
+	}
+}
+
+.ball {
+	color: white;
+	overflow: hidden;
+	width: @tile-width - 4px;
+	height: @tile-width - 2px;
+	padding: 7px 8px;
+	text-align: center;
+	vertical-align: middle;
+	cursor: pointer;
+	&:nth-child(4n) {
+		margin-right: 2px;
+	}
+
+	background-position: 8px 8px;
+	background-repeat: no-repeat;
+
+	&.bouncing {
+		opacity: 0.5
+	}
+
+	//img {
+	-webkit-animation: show-ball .5s steps(9); /* Safari 4+ */
+	-moz-animation:    show-ball .5s steps(9); /* Fx 5+ */
+	-o-animation:      show-ball .5s steps(9); /* Opera 12+ */
+	animation:         show-ball .5s steps(9); /* IE 10+, Fx 29+ */
+	//}
+}
+
+@-webkit-keyframes show-ball {
+	0% {background-position-y: @anim-width * 9}
+  	100% {background-position-y: 0}
+}
+@-moz-keyframes show-ball {
+  	0% {background-position-y: @anim-width * 9}
+  	100% {background-position-y: 0}
+}
+@-o-keyframes show-ball {
+  	0% {background-position-y: @anim-width * 9}
+  	100% {background-position-y: 0}
+}
+@keyframes show-ball {
+  0% {background-position-y: @anim-width * 9}
+  	100% {background-position-y: 0}
+}
+
