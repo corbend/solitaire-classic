@@ -11,7 +11,7 @@ export default class Tile extends React.Component {
 		top = top * this.props.size;
 		return (
 			<div onClick={this.onClickTile.bind(this)} className="tile" style={{position: 'absolute', top, left}}>
-				<span>{this.props.conf.trace_id}</span>
+				<span></span>
 			</div>
 		)
 	}

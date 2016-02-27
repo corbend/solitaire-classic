@@ -1,10 +1,10 @@
 {
-  "name": "canvasjs_playground",
+  "name": "lines-clone",
   "version": "1.0.0",
   "description": "",
   "main": "webpack.config.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node ./node_modules/webpack-dev-server/bin/webpack-dev-server"
   },
   "author": "",
   "license": "ISC",

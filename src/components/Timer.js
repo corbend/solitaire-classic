@@ -12,18 +12,21 @@ export default class Timer extends React.Component {
 		this.start = this.props.start;
 	}
 	onStart() {
-		if (!this.state.start) {			
+		if (!this.state.start && !this.timer) {
 			this.timer = setInterval(() => {
-				
 				let secs = (this.state.seconds % 59 == 0 && this.state.seconds > 0) ? 0: this.state.seconds + 1;
 				let mins = (this.state.seconds % 59 == 0 && this.state.seconds > 0) ? this.state.minutes + 1: this.state.minutes;
 
+				if (!this.start) {
+					this.start = true;
+				}
+
 				this.setState({
 					seconds: secs,
-					minutes: mins
+					minutes: mins,
 				})
 			}, 1000)
-			this.start = true;
+			
 		}
 	}
 	formatTime(t) {
@@ -34,17 +37,37 @@ export default class Timer extends React.Component {
 
 		if (this.props.start && !this.start) {
 			this.onStart();
-		} else if (this.props.start && this.start) {
+			setTimeout(() => {
+				this.setState({
+					start: true
+				})	
+			})		
+		}
+		else if (this.props.stop) {
+			console.log("stop game");
+			if (this.timer) {
+				clearInterval(this.timer);
+				this.timer = null;
+			}
+		} 
+		else if (this.props.start && this.start && !this.state.start) {
 			this.start = false;
 			setTimeout(() => {
 				if (this.timer) {
 					clearInterval(this.timer);
+					this.timer = null;
 				}
 				this.setState({
 					seconds: 0,
 					minutes: 0
 				})
 				this.onStart();
+			})
+		} else if (this.props.start && this.start && this.state.start) {
+			setTimeout(() => {
+				this.setState({
+					start: false
+				})	
 			})
 		}
 		

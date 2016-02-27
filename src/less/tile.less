@@ -34,15 +34,25 @@
 	background-repeat: no-repeat;
 
 	&.bouncing {
-		opacity: 0.5
+		-webkit-animation: flicker 1s ease-in infinite; /* Safari 4+ */
+		-moz-animation:    flicker 1s ease-in infinite; /* Fx 5+ */
+		-o-animation:      flicker 1s ease-in infinite; /* Opera 12+ */
+		animation:         flicker 1s ease-in infinite; /* IE 10+, Fx 29+ */
 	}
 
-	//img {
-	-webkit-animation: show-ball .5s steps(9); /* Safari 4+ */
-	-moz-animation:    show-ball .5s steps(9); /* Fx 5+ */
-	-o-animation:      show-ball .5s steps(9); /* Opera 12+ */
-	animation:         show-ball .5s steps(9); /* IE 10+, Fx 29+ */
-	//}
+	&.hiding {
+		-webkit-animation: disapear 1s ease-in; /* Safari 4+ */
+		-moz-animation:    disapear 1s ease-in; /* Fx 5+ */
+		-o-animation:      disapear 1s ease-in; /* Opera 12+ */
+		animation:         disapear 1s ease-in; /* IE 10+, Fx 29+ */
+	}
+
+	&.showing {
+		-webkit-animation: show-ball .5s steps(9); /* Safari 4+ */
+		-moz-animation:    show-ball .5s steps(9); /* Fx 5+ */
+		-o-animation:      show-ball .5s steps(9); /* Opera 12+ */
+	 	animation:         show-ball .5s steps(9); /* IE 10+, Fx 29+ */
+	}
 }
 
 @-webkit-keyframes show-ball {
@@ -60,5 +70,53 @@
 @keyframes show-ball {
   0% {background-position-y: @anim-width * 9}
   	100% {background-position-y: 0}
+}
+
+
+@-webkit-keyframes flicker {
+	0% {opacity: 0.2}
+	50% {opacity: 0.5}
+  	100% {opacity: 1}
+  	50% {opacity: 0.5}
+  	0% {opacity: 0.2}
+}
+@-moz-keyframes flicker {
+  	0% {opacity: 0.2}
+  	50% {opacity: 0.5}
+  	100% {opacity: 1}
+  	50% {opacity: 0.5}
+  	0% {opacity: 0.2}
+}
+@-o-keyframes flicker {
+  	0% {opacity: 0.2}
+  	50% {opacity: 0.5}
+  	100% {opacity: 1}
+  	50% {opacity: 0.5}
+  	0% {opacity: 0.2}
+}
+@keyframes flicker {
+  	0% {opacity: 0.2}
+  	50% {opacity: 0.5}
+  	100% {opacity: 1}
+  	50% {opacity: 0.5}
+  	0% {opacity: 0.2}
+}
+
+
+@-webkit-keyframes disapear {
+	0% {opacity: 1}
+  	100% {opacity: 0}
+}
+@-moz-keyframes disapear {
+  	0% {opacity: 1}
+  	100% {opacity: 0}
+}
+@-o-keyframes disapear {
+  	0% {opacity: 1}
+  	100% {opacity: 0}
+}
+@keyframes disapear {
+  	0% {opacity: 1}
+  	100% {opacity: 0}
 }
 

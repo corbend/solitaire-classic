@@ -3,6 +3,9 @@ import ReactDOM from 'react-dom';
 import Tile from './components/Tile';
 import Ball from './components/Ball';
 import Timer from './components/Timer';
+import Scores from './components/Scores';
+
+import PointChecker from './points';
 require('./less/style.less');
 
 const RED_IMAGE = 'ball-red.png';
@@ -26,13 +29,90 @@ function removeClass(o, c){
 }
 
 
+let clearMatrix = [
+	[0, 0, 0, 0, 0, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0, 0],
+	[0, 0, 0, 0, 0, 0, 0, 0, 0]
+];
+
+let startBalls = [
+	[0  , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0],
+
+	[0  , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0],
+
+	[0  , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0],
+
+	[0  , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0],
+
+	[0  , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0],
+
+	[0  , 0   , 0   , '1v', '1v', 0   , 0   , 0   , 0],
+
+	[0  , 0   , '1v', 0   , 0   , 0   , 0   , 0   , 0],
+
+	[0  , '1v', 0   , 0   , 0   , 0   , 0   , 0   , 0],
+
+	[0  , 0   , 0   , 0   , 0   , 0   , 0   , 0   , 0]
+] 
+
+
 export default class App extends React.Component {
 	constructor(props) {
 		super(props);
 		const size = 9;
 		this.tileSize = 62;
 		this._animation = "css";
+
+		let balls = [];
+		let cnt = 0;
+
+		this.screenLock = false;
+
+		this.colors = [
+			{name: 'red', img: RED_IMAGE, short_name: 'r'},
+			{name: 'blue', img: BLUE_IMAGE, short_name: 'b'},
+			{name: 'green', img: GREEN_IMAGE, short_name: 'g'},
+			{name: 'aqua', img: AQUA_IMAGE, short_name: 'a'},
+			{name: 'pink', img: PINK_IMAGE, short_name: 'p'},
+			{name: 'yellow', img: YELLOW_IMAGE, short_name: 'y'},
+			{name: 'violet', img: VIOLET_IMAGE, short_name: 'v'}
+		]
+
+		startBalls = null;
+
+		if (startBalls) {
+			//fill game field with start balls (optional, for test)
+			for (let i=0; i < 9; i++) {
+				for (let j=0; j < 9; j++) {
+					if (startBalls[i][j]) {
+						let color = this.colors.find((c) => c.short_name == startBalls[i][j][1]);
+						console.log("add start ball", j, i);
+						balls.push({
+							idx: cnt,
+							x: j,
+							y: i,
+							color: color,
+							image: color.img,
+							size: this.tileSize
+						});
+					}
+					cnt++;
+				}
+				cnt++;
+			}
+		}
+
+		//console.log("start balls", balls);
+
+		this.startBalls = balls;
 		this.state = {
+			scores: 0,
 			tiles: [],
 			moves: [],
 			end: false,
@@ -40,18 +120,10 @@ export default class App extends React.Component {
 			selectedBall: null,
 			nextLine: [],
 			startGame: false,
+			stopGame: false,
 			gameType: size * size
 		}
 
-		this.colors = [
-			{name: 'red', img: RED_IMAGE},
-			{name: 'blue', img: BLUE_IMAGE},
-			{name: 'green', img: GREEN_IMAGE},
-			{name: 'aqua', img: AQUA_IMAGE},
-			{name: 'pink', img: PINK_IMAGE},
-			{name: 'yellow', img: YELLOW_IMAGE},
-			{name: 'violet', img: VIOLET_IMAGE}
-		]
 	}
 	setFieldSize() {
 		this.fieldSize = {81: 9}[this.state.gameType];
@@ -73,98 +145,102 @@ export default class App extends React.Component {
 
 		return array;
 	}
-	newGame() {
-
-		let winCondition = [];
-
-		this.winCondition = winCondition;
-		console.log("cells", this.state.gameType);
+	resetGame() {
+		this.newGame(true);
+	}
+	setEndGameState(reset) {
+		this.setState({
+			end: true,
+			reset: reset,
+			stopGame: true
+		});
+	}
+	newGame(reset) {
 
 		let tilesCount = this.state.gameType;
 		let tiles = Array(tilesCount);
-		this.setState({
-			end: false
-		});
-
+		
 		for (let i = 0; i < tilesCount; i++) {
 			tiles[i] = {idx: i + 1, occupy: false};
 		}
 
-		//this.shuffleFY(tiles);
-		this.setState({
-			tiles: tiles,
-			startGame: true
-		});
+		let startGame = () => {
+			this.setState({
+				end: false,
+				reset: false,
+				tiles: tiles,
+				startGame: true,
+				stopGame: false,
+				balls: [],
+				nextLine: [],
+				scores: 0,
+				selectedBall: null
+			});
 
-		this.getNext({startGame: false});
-	
+			this.getNext({startGame: false});
+		}
+
+		if (reset) {
+			this.setEndGameState();
+
+			setTimeout(() => {
+				startGame();
+			})
+
+			return;
+		} else {
+			startGame();
+		}
+
 	}
 	replayGame() {
 
 	}
-	checkCondition(tiles) {
+	unselectBall() {
+		let selected = this.state.selectedBall;
+		if (!selected) return;
+		let ball = this.state.balls.find((b) => b.x == selected.x && b.y == selected.y);
 
-		let over = tiles.filter((t) => t.occupy).length == tiles.length;
-
-		if (!over) {
-			let line = this.getMatchLine();
-
-			if (line) this.removeLine(line);
+		if (ball) {
+			let sd = this.refs['ball_' + ball.x + "_" + ball.y];
+			sd.select(false);
 		}
-
-		return over;
-	}
-	getMatchLine() {
-		let selectedBall = this.state.selectedBall;
 	}
 	selectBall(ballIndex, conf, isTile) {
 
-		console.log("select tile", arguments)
+		if (this.screenLock) return;
 
 		if (ballIndex && !isTile) {
-			//select ball
-
-			let ball = this.state.balls.find((b) => b.idx == ballIndex);
-			ball.el = conf.el;
-			let prevSelectedBall = this.state.selectedBall;
-			console.log("select a ball", ball, prevSelectedBall);
-			//keyframes animation
-			if (this._animation == "css") {
-				setTimeout(() => {
-
-					if (prevSelectedBall) {
-						removeClass(prevSelectedBall.el, 'bouncing');
-					}
-
-					addClass(ball.el, 'bouncing');
-
-				})
-			}
-
+			//select ball	
+			this.state.balls.forEach((b) => {
+				if (!(conf.x == b.x && conf.y == b.y)) {
+					let ballRef = this.refs["ball_" + b.x + "_" + b.y];
+					ballRef.select(false);
+				}
+			});
+			let ballRef = this.refs["ball_" + conf.x + "_" + conf.y];
+			ballRef.select(true);
+			let ball = this.state.balls.find((b) => b.x == conf.x && b.y == conf.y);
 			this.setState({
 				selectedBall: ball				
 			});
 		} else {
 			//select tile
 			if (this.state.selectedBall && isTile && !conf.occupy) {
-				let x = conf.idx % this.fieldSize;
-				let y = Math.floor(conf.idx / this.fieldSize);
-				this.moveBall(this.state.selectedBall, x - 1, y);
-				//this.getNext();
+				let x = (conf.idx - 1) % this.fieldSize;
+				let y = Math.floor((conf.idx - 1) / this.fieldSize);
+				this.moveBall(this.state.selectedBall, x, y);
 			} else {
 				console.log("illegal move!");
 			}
 		}
-	}
-	onPlayWave() {
-		this.getShortWay(this.nextTile, this.testTo);
 	}
 	getShortWay(from, to, clear) {
 		//Lee algorithm
 
 		let traced = [];
 
-		console.log("trace from", from, ", to", to, "Traced=", traced.length);
+		//console.log("trace from", from, ", to", to, "Traced=", traced.length);
 		if (traced.length == 0) {
 			this.state.tiles.forEach((t) => {
 				delete t.trace_id;
@@ -183,59 +259,53 @@ export default class App extends React.Component {
 		let checkDestMark = (t) => {
 			return t.x == to.x && t.y == to.y
 		}
-		//search for near tiles
-		while (traced.length > 0 && !to.trace_id) {
 
+		let isMarkedExist = true;
+		let setMarked = (tl, sibling, loc) => {
+
+			if (!tl.occupy && typeof tl.trace_id == "undefined") {
+				tl.trace_id = sibling.trace_id + 1;			
+				//let idx = traced.indexOf(tl);
+				//traced.splice(idx, 1);
+				loc.push(tl);
+				isMarkedExist = true;
+				//console.log("left sibling", tl);
+				if (checkDestMark(tl)) {return tl;}
+			}
+
+			return false;
+		}
+		//search for near tiles
+
+		while (isMarkedExist && !to.trace_id) {
+
+			isMarkedExist = false;
 			let loc = [];
 
 			for (let m = 0; m < marked.length; m++) {
 				let mk = marked[m];
 				if ((mk.x - 1) >= 0) {
 					let tl = this.state.tiles.find((t) => t.x == mk.x - 1 && t.y == mk.y)
-					console.log("left sibling", tl);
-					if (!tl.occupy && !tl.trace_id) {
-						tl.trace_id = mk.trace_id + 1;			
-						let idx = traced.indexOf(tl);
-						traced.splice(idx, 1);
-						loc.push(tl);
-						if (checkDestMark(tl)) {alert("point ok");return tl;}
-					}				
+					let r = setMarked(tl, mk, loc) 
+					if (r) return r;
 				}
 
 				if ((mk.x + 1) <= (this.fieldSize - 1)) {
 					let tl = this.state.tiles.find((t) => t.x == mk.x + 1 && t.y == mk.y)
-					console.log("right sibling", tl);
-					if (!tl.occupy && !tl.trace_id) {
-						tl.trace_id = mk.trace_id + 1;
-						let idx = traced.indexOf(tl);
-						traced.splice(idx, 1);
-						loc.push(tl);
-						if (checkDestMark(tl)) {alert("point ok");return tl;}
-					}
+					let r = setMarked(tl, mk, loc);
+					if (r) return r;
 				}
 
 				if ((mk.y - 1) >= 0) {
 					let tl = this.state.tiles.find((t) => t.x == mk.x && t.y == mk.y - 1)
-					console.log("top sibling", tl);
-					if (!tl.occupy && !tl.trace_id) {
-						tl.trace_id = mk.trace_id + 1;
-						let idx = traced.indexOf(tl);
-						traced.splice(idx, 1);
-						loc.push(tl);
-						if (checkDestMark(tl)) {alert("point ok");return tl;}
-					}
+					let r = setMarked(tl, mk, loc);
+					if (r) return r;
 				}
 
 				if ((mk.y + 1) <= (this.fieldSize - 1)) {				
 					let tl = this.state.tiles.find((t) => t.x == mk.x && (t.y == mk.y + 1))
-					console.log("bottom", tl);
-					if (!tl.occupy && !tl.trace_id) {
-						tl.trace_id = mk.trace_id + 1;
-						let idx = traced.indexOf(tl);
-						traced.splice(idx, 1);
-						loc.push(tl);
-						if (checkDestMark(tl)) {alert("point ok");return tl;}
-					}
+					let r = setMarked(tl, mk, loc);
+					if (r) return r;
 				}				
 			};
 			
@@ -253,7 +323,7 @@ export default class App extends React.Component {
 	findBestWay(from, to) {
 		let lastPoint = to;
 		let way = [];
-		console.log("find way to", from, to);
+		//console.log("find way to", from, to);
 		if (typeof to.trace_id == "undefined") {
 			console.warn("way not found!");
 			return 
@@ -296,19 +366,77 @@ export default class App extends React.Component {
 
 		return way;
 	}
+	removeMatch(movedBall, changeStateCallback) {
+
+		let checker = new PointChecker(this.state.balls);
+		let siblings = (movedBall && checker.getSiblings(movedBall)) || [];
+		let ballsRemoved = [];
+		let ballsRemovedIds = [];
+		//console.log("remove siblings", siblings.length);
+		let currentScores = this.state.scores;
+
+		if (siblings.length >= 4) {
+			this.setScreenLock(true);
+			ballsRemoved = siblings.concat([movedBall]);
+			ballsRemovedIds = [];
+			ballsRemoved.forEach((s) => {
+				let ballRemoveIdx = null;
+				let ballRemove = null;
+				this.state.balls.forEach((b, index) => {
+					if (s.x === b.x && s.y === b.y) {
+						ballRemoveIdx = index;
+						ballRemove = b;
+						//console.log("remove ball", ballRemove.x, ballRemove.y);
+					}
+				});
+
+				if (ballRemoveIdx !== null) {
+					let tl = this.state.tiles.find((t) => t.x == ballRemove.x && t.y == ballRemove.y)
+					tl.occupy = false;
+					ballsRemovedIds.push(ballRemoveIdx);
+					currentScores += 10;
+				}
+			});
+
+			ballsRemoved.forEach((b) => {
+				//hide ball
+				let ballRef = this.refs['ball_' + b.x + "_" + b.y];
+				ballRef.hide(true);
+			});
+		}
+
+		let delay = (ballsRemoved.length && 1500) || 0;
+		//after animation
+		setTimeout(() => {
+			changeStateCallback(ballsRemoved, {
+				scores: currentScores				
+			});	
+		}, delay);
+
+	}
 	moveBall(ball, x, y) {
 
+		this.setScreenLock(true);
+
 		let destPoint = this.getShortWay(ball, {x, y}, true);
+
+		if (!destPoint) {
+			this.setScreenLock(false);
+			return;
+		};
+
 		let pathWays = this.findBestWay(ball, destPoint);
 
-		if (!pathWays) return;
+		if (!pathWays) {
+			this.setScreenLock(false);
+			return;
+		};
 
 		this.setState({
 			tiles: this.state.tiles
 		});
 
-		console.log("way", pathWays);
-
+		//console.log("way", pathWays);
 		pathWays.unshift({x: x, y: y});
 
 		if (pathWays.length > 0) {
@@ -322,20 +450,32 @@ export default class App extends React.Component {
 
 			preTile.occupy = false;
 
-			let animate = () => {
+			let origBckg = this.state.selectedBall.el.style.backgroundPositionY;
+			let animatedTiles = [];
 
-				let nextTile = pathWays.pop();
+			let setBackground = (t) => {
+				let dm = this.refs["tile_" + (t.idx - 1)];
+				dm = ReactDOM.findDOMNode(dm);
 
-				console.log("move ball", x, y)
-				this.state.selectedBall.x = nextTile.x;
-				this.state.selectedBall.y = nextTile.y;
+				if (dm) {
+					dm.style.backgroundImage = this.state.selectedBall.el.style.backgroundImage;
+					//dm.style.opacity = "0.5";
+					dm.style.backgroundPositionY = (-296) + "px";
+					animatedTiles.push(dm);
+				}
+			}
 
-				this.setState({
-					selectedBall: this.state.selectedBall
-				})
+			setBackground(preTile);
 
-				if (pathWays.length) {
-					setTimeout(animate, 1000);
+			let nextTile;
+
+			let backAnimate = () => {
+
+				let tel = animatedTiles.shift();	
+				tel.style.backgroundImage = "none";
+					
+				if (animatedTiles.length) {
+					setTimeout(backAnimate, 50);
 				} else {
 					let movedBall = this.state.balls.find((b) => {
 						return (
@@ -346,7 +486,7 @@ export default class App extends React.Component {
 
 					movedBall.x = this.state.selectedBall.x;
 					movedBall.y = this.state.selectedBall.y;
-					console.log("ball", movedBall);
+					this.state.selectedBall.el.style.backgroundPositionY = origBckg;
 
 					let postTile = this.state.tiles.find((b) => {
 						return (
@@ -357,10 +497,59 @@ export default class App extends React.Component {
 
 					postTile.occupy = true;
 
-					this.setState({
-						balls: this.state.balls
-					})
-					this.getNext();
+					this.removeMatch(movedBall, (removedBalls, stateParams) => {
+
+						removedBalls.forEach((rb) => {
+							let t = this.state.tiles.find((t) => t.x == rb.x && t.y == rb.y);
+							t.occupy = false;
+							this.state.balls.splice(this.state.balls.indexOf(rb), 1);
+						});
+
+						this.unselectBall();
+
+						let stateToSet = {
+							balls: this.state.balls,
+							selectedBall: null
+						}
+
+						//merge params
+						if (stateParams) {
+							for (let param in stateParams) {
+								stateToSet[param] = stateParams[param];
+							}
+						}
+
+						this.setScreenLock(false);
+						this.setState(stateToSet);
+
+						if (removedBalls.length == 0) {
+							this.getNext();
+						}
+					});
+
+				}
+			}
+
+			let animate = () => {
+
+				if (nextTile && pathWays.length > 1) { 
+					setBackground(nextTile);
+				}
+
+				nextTile = pathWays.pop();
+
+				this.state.selectedBall.x = nextTile.x;
+				this.state.selectedBall.y = nextTile.y;
+
+				//this.state.selectedBall.el.style.backgroundPositionY = (-291) + "px"
+				this.setState({
+					selectedBall: this.state.selectedBall
+				})
+
+				if (pathWays.length) {
+					setTimeout(animate, 100);
+				} else {
+					setTimeout(backAnimate, 100);					
 				}
 			}
 
@@ -378,10 +567,19 @@ export default class App extends React.Component {
 	}
 	nextTurn(forceColors) {
 
-		let nextBalls = [];
-		let reservedTiles = [];
+		if (this.screenLock) {
+			return
+		};
 
-		for (let b = 0; b < 3; b++) {
+		let nextBalls = [];
+		//for store not repeating tiles
+		let reservedTiles = [];
+		let unocuppyTiles = this.getFreeTiles(reservedTiles);
+		let emptyTilesCount = 3;
+		if (unocuppyTiles.length < 3) {
+			emptyTilesCount = unocuppyTiles.length;
+		}
+		for (let b = 0; b < emptyTilesCount; b++) {
 
 			let color;
 
@@ -391,16 +589,13 @@ export default class App extends React.Component {
 				color = this.state.nextLine[b].color;
 			}
 
-			let unocuppyTiles = this.getFreeTiles(reservedTiles);
-
+			unocuppyTiles = this.getFreeTiles(reservedTiles);
+			//console.log("empty tiles", unocuppyTiles.length);
 			let tile = this.shuffleFY(unocuppyTiles)[0];
-
-			if (!tile) return;
-
 			reservedTiles.push(tile);
 			let index = tile.idx;
 
-			console.log(unocuppyTiles.length, color, tile);
+			//console.log(unocuppyTiles.length, color, tile);
 			let next = {
 				idx: index,
 				color: color,
@@ -412,10 +607,18 @@ export default class App extends React.Component {
 
 			nextBalls.push(next);
 			
-			console.log("next ball", next);
+			//console.log("next ball", next);
 		}
 
+		if (nextBalls.length == 0 || (this.state.tiles.length - this.state.balls.length) == 0) {
+			this.setEndGameState();
+		};
+
 		return nextBalls;
+	}
+	setScreenLock(value) {
+		console.log("scree lock", value);
+		this.screenLock = value;
 	}
 	setGameState(event) {
 		let menuItem = event.target;
@@ -434,26 +637,52 @@ export default class App extends React.Component {
 		}
 
 	}
-	getNext(stateParams) {
-
-		if (this.state.end) return;
-
-		let nextBalls = this.nextTurn();
-
-		if (!nextBalls) {
-			this.setState({
-				end: true
-			});
-			return;
+	changeState(balls, nextLine, stateParams) {
+		//console.log("SWITCH STATE ---->", stateParams, this.state);
+		//when no balls left for checking, change game state
+		let newState = {
+			balls: balls,
+			tiles: this.state.tiles,
+			nextLine: nextLine
 		}
 
-		let updatedTiles = [];
-		nextBalls.forEach((b) => {
-			let tile = this.state.tiles.find((t) => t.idx == b.idx);
-			console.log("set tile occupy", tile);
-			tile.occupy = true;
-			updatedTiles.push(tile);
-		});
+		if (stateParams) {
+			if (typeof stateParams.startGame != "undefined") {
+				//console.log("start game -->");
+				newState.startGame = stateParams.startGame
+			}
+			if (typeof stateParams.end != "undefined") {
+				//console.log("end game -->");
+				newState.end = stateParams.end;
+			}
+		}
+
+		this.setScreenLock(false);
+
+		//check fail condition
+		if (balls.length < this.fieldSize * this.fieldSize) {
+			this.setState(newState);
+		} else {
+			this.setEndGameState();
+		}
+		
+	}
+	getBallTile(b) {
+		return this.state.tiles.find((t) => t.y == b.y && t.x == b.x);
+	}
+	getNext(stateParams) {
+
+		if (this.state.end || this.screenLock) {
+			return;
+		};
+		
+		stateParams = stateParams || {};
+		let nextBalls = this.nextTurn();
+
+		if (!nextBalls || nextBalls.length == 0) {
+			console.log("end of game");
+			return;
+		}
 
 		let balls = this.state.balls;
 
@@ -462,36 +691,98 @@ export default class App extends React.Component {
 
 		if (!nextLine) {
 			nextLine = [];
-			stateParams = stateParams || {};
 			stateParams.end = true;
+			this.setState(stateParams);
+			return;
 		}
 
-		nextBalls.forEach((nb)=> {
-			balls.push(nb);
-		})
+		while (this.startBalls.length > 0) {
+			balls.push(this.startBalls.pop());
+		}	
 
-		console.log("occupy tiles", updatedTiles);
+		nextBalls.forEach((nb)=> {		
+			this.getBallTile(nb).occupy = true;
+			balls.push(nb);
+		});
 
 		this.state.tiles.forEach((t) => {
 			delete t.trace_id;
 		})
 
-		let newState = {
-			balls: balls,
-			nextLine: nextLine,
-			tiles: this.state.tiles
-		}
+		//check matched lines
+		let ballsToCheck = [];
 
-		if (stateParams) {
-			if (typeof stateParams.startGame != "undefined") {
-				newState.startGame = stateParams.startGame
-			}
-			if (typeof stateParams.end != "undefined") {
-				newState.end = stateParams.end;
-			}
-		}
+		balls.forEach((b) => {
+			ballsToCheck.push(b);
+		})			
 
-		this.setState(newState);
+		this.setState({
+			balls: balls
+		})
+
+		setTimeout(() => {
+			let afterCheck = (removedBalls, params) => {
+				removedBalls.forEach((rb) => {
+					let t = this.state.tiles.find((t) => t.x == rb.x && t.y == rb.y);
+					t.occupy = false;
+					ballsToCheck.splice(ballsToCheck.indexOf(rb), 1);
+					balls.splice(balls.indexOf(rb), 1);
+				})
+
+				if (params) {
+					for (let param in params) {
+						stateParams[param] = params[param];
+					}
+				}
+
+				if (!ballsToCheck.length) {
+					//console.log("NEXT CHECK...");
+					this.changeState(balls, nextLine, stateParams);					
+				} else {
+					//while all balls not checked for removed condition process checking
+					let b = ballsToCheck.pop();
+					//console.log("CHECKING...");				
+					this.removeMatch(b, afterCheck);	
+				}
+
+				//console.log("balls to check", ballsToCheck.length);
+			}
+				
+			this.removeMatch(ballsToCheck.pop(), afterCheck);
+		});
+	}
+	renderNextLineBlock(className) {
+		if (this.state.nextLine.length > 0) {			
+			let cls = ["next-line", className];
+			return (
+				<div className={cls.join(" ")}>
+					<div className="next-balls">
+						<h4>NEXT</h4>
+						<div className="ball bordered">
+							<img src={'img/' + this.state.nextLine[0].image}/>
+						</div>
+						<div className="ball bordered">
+							<img src={'img/' + this.state.nextLine[1].image}/>
+						</div>
+						<div className="ball bordered">
+							<img src={'img/' + this.state.nextLine[2].image}/>
+						</div>
+					</div>
+					<div className="delimeter"></div>
+					<div className="balls-counter">
+						<h4>BALLS</h4>
+						<span className="title-text">{this.state.balls.length}</span>
+					</div>
+					<div className="delimeter"></div>
+					<div className="empty-counter">
+						<h4>EMPTY</h4>
+						<span className="title-text">{this.state.tiles.filter((t) => !t.occupy).length}</span>
+					</div>
+				</div>
+			);
+		} else {
+			return (<div></div>);
+		}
 	}
 	render() {
 		let top = 0;
@@ -502,39 +793,21 @@ export default class App extends React.Component {
 
 		if (this.state.start) {
 
-			let nextBallsBlock = (function() {
-				if (this.state.nextLine.length > 0) {
-					return (
-						<div className="next-line">
-							<h4>NEXT</h4>
-							<div className="ball bordered">
-								<img src={'img/' + this.state.nextLine[0].image}/>
-							</div>
-							<div className="ball bordered">
-								<img src={'img/' + this.state.nextLine[1].image}/>
-							</div>
-							<div className="ball bordered">
-								<img src={'img/' + this.state.nextLine[2].image}/>
-							</div>
-						</div>
-					);
-				} else {
-					return (<div></div>);
-				}
-			}).call(this);
-
+			let btnCls = (this.screenLock && "disabled") || "";
+			let self = this;
 			gameScreen = (
 				<div>
 					<div className="title">
 						<h1>LINES</h1>
 						<div className="tools">
-							<Timer start={this.state.startGame}></Timer>
-							<button onClick={this.newGame.bind(this)}>Reset</button>
-							<button onClick={this.getNext.bind(this)}>Next</button>
-							<button onClick={this.onPlayWave.bind(this)}>Play</button>
-						</div>						
+							<Timer start={this.state.startGame} stop={this.state.stopGame}></Timer>
+							<button className={btnCls} onClick={this.resetGame.bind(this)}>Reset</button>
+							<button className={btnCls} onClick={this.getNext.bind(this)}>Next</button>														
+						</div>
+						<Scores value={this.state.scores}></Scores>				
 					</div>
-					{nextBallsBlock}
+					{this.renderNextLineBlock.call(self, "left")}
+					{this.renderNextLineBlock.call(self, "right")}
 					<div className="game-field" style={{position: 'relative'}}>	
 					{ this.state.tiles.map((tile, index) => {
 						let left = index % this.fieldSize == 0 ? 0: index - top * this.fieldSize;
@@ -542,13 +815,12 @@ export default class App extends React.Component {
 						tile.x = left;
 						tile.y = top;
 						return (
-							<Tile onClickRow={this.selectBall.bind(this)} key={index} position={[left, top]} conf={tile} size={this.tileSize}/>
+							<Tile ref={"tile_" + index} onClickRow={this.selectBall.bind(this)} key={index} position={[left, top]} conf={tile} size={this.tileSize}/>
 						)
 					}, this)}
 					{ this.state.balls.map((ball, index) => {
-						//console.log("render ball", ball);
 						return (
-							<Ball onClickRow={this.selectBall.bind(this)} key={index} conf={ball}/>
+							<Ball ref={"ball_" + ball.x + "_" + ball.y} onClickRow={this.selectBall.bind(this)} key={index} conf={ball}/>
 						)
 					}, this)}
 					</div>
@@ -561,7 +833,7 @@ export default class App extends React.Component {
 				}
 			})			
 		} else {
-			this.currentYear = new Date().getFullYear();
+			this.currentYear = ", " + new Date().getFullYear();
 			gameScreen = (			
 				<div>
 					<div className="start-menu">
@@ -583,9 +855,9 @@ export default class App extends React.Component {
 			)
 		}
 
-		if (this.state.end) {
+		if (this.state.end && !this.state.reset) {
 			stateScreen = (
-				<h1>Game finished!</h1>
+				<h1 class="end-title">Game finished!</h1>
 			);
 		}
 
