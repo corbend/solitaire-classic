@@ -148,7 +148,7 @@ export default class App extends React.Component {
 	resetGame() {
 		this.newGame(true);
 	}
-	setEndGameState(reset) {
+	setEndGameState(reset) {		
 		this.setState({
 			end: true,
 			reset: reset,
@@ -414,6 +414,73 @@ export default class App extends React.Component {
 		}, delay);
 
 	}
+	checkRemoveAndNext(ballsToCheck, recursive) {
+
+		let checkList = [];
+
+		ballsToCheck.forEach((b) => {
+			checkList.push(b);
+		})
+
+		console.log("ball to check", checkList.length);
+		this.setScreenLock(true);
+
+		let afterCheck = (removedBalls, params) => {
+
+			removedBalls.forEach((rb) => {
+				let t = this.state.tiles.find((t) => t.x == rb.x && t.y == rb.y);
+				t.occupy = false;
+				checkList.splice(checkList.indexOf(rb), 1);
+				this.state.balls.splice(this.state.balls.indexOf(rb), 1);
+			})
+
+			this.unselectBall();
+
+			if (!checkList.length) {
+				let stateParams = {};
+				if (params) {
+					for (let param in params) {
+						stateParams[param] = params[param];
+					}
+				}
+
+				stateParams.selectedBall = null;
+
+				//if no balls removed then generate next balls
+				let options = {};
+				if (!removedBalls.length) {
+					options.getNextLine = true;
+				}
+
+				this.setScreenLock(false);
+				console.log("NEXT CHECK...", options, this.state.balls.length);
+				if (this.state.balls.length >= (this.fieldSize * this.fieldSize)) {
+					options.end = true;
+					this.changeState(stateParams, options);
+				}
+
+				if (!recursive) {
+					this.changeState(stateParams, options);
+					setTimeout(() => {
+						this.checkRemoveAndNext(this.state.balls, true);
+					});
+				}
+			} else {
+				//while all balls not checked for removed condition process checking
+				let b = checkList.pop();
+				console.log("CHECKING...");				
+				this.removeMatch(b, afterCheck);	
+			}
+
+			//console.log("balls to check", ballsToCheck.length);
+		}
+			
+		if (checkList.length) {
+			this.removeMatch(checkList.pop(), afterCheck);
+		} else {
+			afterCheck([], {});
+		}
+	}
 	moveBall(ball, x, y) {
 
 		this.setScreenLock(true);
@@ -497,35 +564,8 @@ export default class App extends React.Component {
 
 					postTile.occupy = true;
 
-					this.removeMatch(movedBall, (removedBalls, stateParams) => {
-
-						removedBalls.forEach((rb) => {
-							let t = this.state.tiles.find((t) => t.x == rb.x && t.y == rb.y);
-							t.occupy = false;
-							this.state.balls.splice(this.state.balls.indexOf(rb), 1);
-						});
-
-						this.unselectBall();
-
-						let stateToSet = {
-							balls: this.state.balls,
-							selectedBall: null
-						}
-
-						//merge params
-						if (stateParams) {
-							for (let param in stateParams) {
-								stateToSet[param] = stateParams[param];
-							}
-						}
-
-						this.setScreenLock(false);
-						this.setState(stateToSet);
-
-						if (removedBalls.length == 0) {
-							this.getNext();
-						}
-					});
+					//next turn					
+					this.getNext({}, [movedBall]);
 
 				}
 			}
@@ -566,10 +606,6 @@ export default class App extends React.Component {
 		})
 	}
 	nextTurn(forceColors) {
-
-		if (this.screenLock) {
-			return
-		};
 
 		let nextBalls = [];
 		//for store not repeating tiles
@@ -617,7 +653,6 @@ export default class App extends React.Component {
 		return nextBalls;
 	}
 	setScreenLock(value) {
-		console.log("scree lock", value);
 		this.screenLock = value;
 	}
 	setGameState(event) {
@@ -637,118 +672,83 @@ export default class App extends React.Component {
 		}
 
 	}
-	changeState(balls, nextLine, stateParams) {
-		//console.log("SWITCH STATE ---->", stateParams, this.state);
-		//when no balls left for checking, change game state
-		let newState = {
-			balls: balls,
-			tiles: this.state.tiles,
-			nextLine: nextLine
-		}
+	addNewBalls(stateParams) {
 
-		if (stateParams) {
-			if (typeof stateParams.startGame != "undefined") {
-				//console.log("start game -->");
-				newState.startGame = stateParams.startGame
-			}
-			if (typeof stateParams.end != "undefined") {
-				//console.log("end game -->");
-				newState.end = stateParams.end;
-			}
-		}
-
-		this.setScreenLock(false);
-
-		//check fail condition
-		if (balls.length < this.fieldSize * this.fieldSize) {
-			this.setState(newState);
-		} else {
-			this.setEndGameState();
-		}
-		
-	}
-	getBallTile(b) {
-		return this.state.tiles.find((t) => t.y == b.y && t.x == b.x);
-	}
-	getNext(stateParams) {
-
-		if (this.state.end || this.screenLock) {
-			return;
-		};
-		
-		stateParams = stateParams || {};
 		let nextBalls = this.nextTurn();
+		stateParams = stateParams || {};
 
 		if (!nextBalls || nextBalls.length == 0) {
 			console.log("end of game");
 			return;
 		}
 
-		let balls = this.state.balls;
-
-		let forceGetColors = true;
-		let nextLine = this.nextTurn(forceGetColors);
-
-		if (!nextLine) {
-			nextLine = [];
-			stateParams.end = true;
-			this.setState(stateParams);
-			return;
-		}
-
+		//add starting balls for testing
 		while (this.startBalls.length > 0) {
-			balls.push(this.startBalls.pop());
+			let sb = this.startBalls.pop();
+			nextBalls.push(sb);
 		}	
 
+		//add new portion of fresh balls
 		nextBalls.forEach((nb)=> {		
 			this.getBallTile(nb).occupy = true;
-			balls.push(nb);
 		});
 
 		this.state.tiles.forEach((t) => {
 			delete t.trace_id;
 		})
 
-		//check matched lines
-		let ballsToCheck = [];
+		return nextBalls;
+	}
+	changeState(stateParams, options) {
+		//console.log("SWITCH STATE ---->", stateParams, this.state);
+		//when no balls left for checking, change game state
 
-		balls.forEach((b) => {
-			ballsToCheck.push(b);
-		})			
+		let newState = {
+			balls: this.state.balls,
+			tiles: this.state.tiles,
+		}
 
-		this.setState({
-			balls: balls
-		})
+		if (options && options.getNextLine) {
+			let forceGetColors = true;
+			//get only colors, not positions
+			newState.nextLine = this.nextTurn(forceGetColors);
+			//get new balls 
+			newState.balls = newState.balls.concat(this.addNewBalls());
+		}
+
+		if (stateParams) {
+			if (typeof stateParams.startGame != "undefined") {
+				console.log("start game -->");
+				newState.startGame = stateParams.startGame
+			}
+			if (typeof stateParams.end != "undefined") {
+				console.log("end game -->");
+				newState.end = stateParams.end;
+			}
+		}
+
+		console.log("end condition", options && options.end);
+		if (options && options.end) {
+			this.setEndGameState();
+		} else {
+			this.setState(newState);			
+		}
+		
+	}
+	getBallTile(b) {
+		return this.state.tiles.find((t) => t.y == b.y && t.x == b.x);
+	}
+	onNextClick() {
+		this.getNext({}, []);
+	}
+	getNext(stateParams, ballsToCheck) {
+
+		if (this.state.end) {
+			return;
+		};
 
 		setTimeout(() => {
-			let afterCheck = (removedBalls, params) => {
-				removedBalls.forEach((rb) => {
-					let t = this.state.tiles.find((t) => t.x == rb.x && t.y == rb.y);
-					t.occupy = false;
-					ballsToCheck.splice(ballsToCheck.indexOf(rb), 1);
-					balls.splice(balls.indexOf(rb), 1);
-				})
-
-				if (params) {
-					for (let param in params) {
-						stateParams[param] = params[param];
-					}
-				}
-
-				if (!ballsToCheck.length) {
-					//console.log("NEXT CHECK...");
-					this.changeState(balls, nextLine, stateParams);					
-				} else {
-					//while all balls not checked for removed condition process checking
-					let b = ballsToCheck.pop();
-					//console.log("CHECKING...");				
-					this.removeMatch(b, afterCheck);	
-				}
-
-				//console.log("balls to check", ballsToCheck.length);
-			}
-				
-			this.removeMatch(ballsToCheck.pop(), afterCheck);
+			this.checkRemoveAndNext(ballsToCheck || []);
 		});
 	}
 	renderNextLineBlock(className) {
@@ -802,7 +802,7 @@ export default class App extends React.Component {
 						<div className="tools">
 							<Timer start={this.state.startGame} stop={this.state.stopGame}></Timer>
 							<button className={btnCls} onClick={this.resetGame.bind(this)}>Reset</button>
-							<button className={btnCls} onClick={this.getNext.bind(this)}>Next</button>														
+							<button className={btnCls} onClick={this.onNextClick.bind(this)}>Next</button>														
 						</div>
 						<Scores value={this.state.scores}></Scores>				
 					</div>
@@ -857,7 +857,7 @@ export default class App extends React.Component {
 
 		if (this.state.end && !this.state.reset) {
 			stateScreen = (
-				<h1 class="end-title">Game finished!</h1>
+				<h1 className="end-title">Game finished!</h1>
 			);
 		}
 
