@@ -177,7 +177,7 @@ export default class App extends React.Component {
 				selectedBall: null
 			});
 
-			this.getNext({startGame: false});
+			this.getNext();
 		}
 
 		if (reset) {
@@ -373,10 +373,8 @@ export default class App extends React.Component {
 		let ballsRemoved = [];
 		let ballsRemovedIds = [];
 		//console.log("remove siblings", siblings.length);
-		let currentScores = this.state.scores;
 
 		if (siblings.length >= 4) {
-			this.setScreenLock(true);
 			ballsRemoved = siblings.concat([movedBall]);
 			ballsRemovedIds = [];
 			ballsRemoved.forEach((s) => {
@@ -394,7 +392,6 @@ export default class App extends React.Component {
 					let tl = this.state.tiles.find((t) => t.x == ballRemove.x && t.y == ballRemove.y)
 					tl.occupy = false;
 					ballsRemovedIds.push(ballRemoveIdx);
-					currentScores += 10;
 				}
 			});
 
@@ -405,27 +402,24 @@ export default class App extends React.Component {
 			});
 		}
 
-		let delay = (ballsRemoved.length && 1500) || 0;
+		let delay = (ballsRemoved.length && 2500) || 0;
 		//after animation
-		setTimeout(() => {
-			changeStateCallback(ballsRemoved, {
-				scores: currentScores				
-			});	
-		}, delay);
+		setTimeout(((ballsToDelete) => {
+			return () => changeStateCallback(ballsToDelete);	
+		})(ballsRemoved), delay);
 
 	}
-	checkRemoveAndNext(ballsToCheck, recursive) {
+	checkRemoveAndNext(ballsToCheck, successCheckCallback) {
 
 		let checkList = [];
+		let pointsGained = 0;
 
 		ballsToCheck.forEach((b) => {
 			checkList.push(b);
 		})
 
-		console.log("ball to check", checkList.length);
-		this.setScreenLock(true);
-
-		let afterCheck = (removedBalls, params) => {
+		let afterCheck = (removedBalls) => {
+			pointsGained += removedBalls.length * 10;
 
 			removedBalls.forEach((rb) => {
 				let t = this.state.tiles.find((t) => t.x == rb.x && t.y == rb.y);
@@ -437,52 +431,24 @@ export default class App extends React.Component {
 			this.unselectBall();
 
 			if (!checkList.length) {
-				let stateParams = {};
-				if (params) {
-					for (let param in params) {
-						stateParams[param] = params[param];
-					}
-				}
-
-				stateParams.selectedBall = null;
-
-				//if no balls removed then generate next balls
-				let options = {};
-				if (!removedBalls.length) {
-					options.getNextLine = true;
-				}
-
-				this.setScreenLock(false);
-				console.log("NEXT CHECK...", options, this.state.balls.length);
-				if (this.state.balls.length >= (this.fieldSize * this.fieldSize)) {
-					options.end = true;
-					this.changeState(stateParams, options);
-				}
-
-				if (!recursive) {
-					this.changeState(stateParams, options);
-					setTimeout(() => {
-						this.checkRemoveAndNext(this.state.balls, true);
-					});
-				}
+				//all actions all done and screen must be unlocked			
+				successCheckCallback(pointsGained);				
 			} else {
 				//while all balls not checked for removed condition process checking
 				let b = checkList.pop();
-				console.log("CHECKING...");				
-				this.removeMatch(b, afterCheck);	
+				//console.log("CHECKING...");				
+				this.removeMatch(b, afterCheck);
 			}
-
-			//console.log("balls to check", ballsToCheck.length);
 		}
 			
 		if (checkList.length) {
 			this.removeMatch(checkList.pop(), afterCheck);
 		} else {
-			afterCheck([], {});
+			afterCheck([]);
 		}
 	}
 	moveBall(ball, x, y) {
-
+		//console.log("move ball", x, y);
 		this.setScreenLock(true);
 
 		let destPoint = this.getShortWay(ball, {x, y}, true);
@@ -565,7 +531,7 @@ export default class App extends React.Component {
 					postTile.occupy = true;
 
 					//next turn					
-					this.getNext({}, [movedBall]);
+					this.getNext();
 
 				}
 			}
@@ -653,7 +619,10 @@ export default class App extends React.Component {
 		return nextBalls;
 	}
 	setScreenLock(value) {
-		this.screenLock = value;
+		if (value != this.screenLock) {
+			//console.log("screen - " + (value ? "LOCK": "UNLOCK"));
+			this.screenLock = value;
+		}
 	}
 	setGameState(event) {
 		let menuItem = event.target;
@@ -699,57 +668,74 @@ export default class App extends React.Component {
 
 		return nextBalls;
 	}
-	changeState(stateParams, options) {
+	changeState() {
 		//console.log("SWITCH STATE ---->", stateParams, this.state);
 		//when no balls left for checking, change game state
-
-		let newState = {
-			balls: this.state.balls,
-			tiles: this.state.tiles,
+		let failCondition = this.state.balls.length >= (this.fieldSize * this.fieldSize);
+		if (failCondition) {
+			return this.setEndGameState();
 		}
 
-		if (options && options.getNextLine) {
-			let forceGetColors = true;
-			//get only colors, not positions
-			newState.nextLine = this.nextTurn(forceGetColors);
-			//get new balls 
-			newState.balls = newState.balls.concat(this.addNewBalls());
-		}
+		let currentScore = this.state.scores;
+		this.setState({
+			scores: this.state.scores
+		})
+		//deferred check for removed balls
+		this.checkRemoveAndNext(this.state.balls, (gainPoints) => {
 
-		if (stateParams) {
-			if (typeof stateParams.startGame != "undefined") {
-				console.log("start game -->");
-				newState.startGame = stateParams.startGame
+			let currentScore = this.state.scores + gainPoints;
+			let balls = this.state.balls;
+			let newState = {
+				balls: this.state.balls,
+				tiles: this.state.tiles,
+				scores: currentScore
 			}
-			if (typeof stateParams.end != "undefined") {
-				console.log("end game -->");
-				newState.end = stateParams.end;
-			}
-		}
 
-		console.log("end condition", options && options.end);
-		if (options && options.end) {
-			this.setEndGameState();
-		} else {
-			this.setState(newState);			
-		}
+			//if game points gained balls removed
+			let setNextLine = currentScore == this.state.scores;
+			if (setNextLine) {				
+				let forceGetColors = true;
+				//get only colors, not positions
+				newState.nextLine = this.nextTurn(forceGetColors);
+				//get new balls 
+				newState.balls = newState.balls.concat(this.addNewBalls());			
+			}
+
+			this.setState(newState);
+				
+			this.checkRemoveAndNext(this.state.balls, (gainPoints) => {
+				let currentScore = this.state.scores + gainPoints;
+				this.setScreenLock(false);
+
+				if (gainPoints === 0 && this.state.balls.length >= (this.fieldSize * this.fieldSize)) {
+					this.setEndGameState();
+				} else {
+					this.setState({
+						balls: this.state.balls,
+						scores: currentScore
+					});
+				}
+			});
+		});
 		
 	}
 	getBallTile(b) {
 		return this.state.tiles.find((t) => t.y == b.y && t.x == b.x);
 	}
 	onNextClick() {
-		this.getNext({}, []);
+		if (!this.screenLock) {
+			this.getNext();
+		}
 	}
-	getNext(stateParams, ballsToCheck) {
+	getNext() {
 
 		if (this.state.end) {
 			return;
 		};
 
-		setTimeout(() => {
-			this.checkRemoveAndNext(ballsToCheck || []);
-		});
+		this.setScreenLock(true);
+		//add new balls
+		this.changeState();
 	}
 	renderNextLineBlock(className) {
 		if (this.state.nextLine.length > 0) {			
