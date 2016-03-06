@@ -1,122 +1,78 @@
-@anim-width: -57.8px;
+@card-width: 99px;
+@card-height: 154px;
+@card-gap: 20px;
+@g-padding: 20px;
 
-.tile {
-	color: white;
-	border: 1px solid darken(@tile-background-color, 20%);
-	border-radius: 4px;	
-	margin: 6px;
-	width: @tile-width - 2px;
-	height: @tile-width - 2px;
-	background: @tile-background-color;
-	padding: 0px;
-	text-align: center;
-	vertical-align: middle;
+.foundation {
+	top: @g-padding;
+	width: (@card-width + @card-gap) * 4 + @card-gap;
+	right: @g-padding;
+	height: @card-height;
+	position: absolute;
+	//border: 1px solid black;
+}
+
+.tableau {
+	width: (@card-width + @card-gap) * 7;
+	top: @card-height + @card-gap * 2;
+	right: @g-padding;
+	height: 350px;
+	position: absolute;
+	//border: 1px solid black;
+}
+
+.stock {
+	width: @card-width;
+	position: absolute;
+	height: @card-height;
+	top: @g-padding;
+	//border: 1px solid black;
+	left: @g-padding;
+}
+
+.waste {
+	width: @card-width + 3 * @card-gap;
+	position: absolute;
+	height: @card-height;
+	top: @g-padding;
+	//border: 1px solid black;
+	left: @card-width + 2 * @card-gap;
+}
+
+.card {
+	width: @card-width;
+	height: @card-height;
+	position: absolute;
+	//border: 1px solid white;
+	background-repeat: none;
+	background-position: left top;
+	background-size: 100%;
 	cursor: pointer;
-	&:nth-child(4n) {
-		margin-right: 2px;
-	}
 }
 
-.ball {
-	color: white;
-	overflow: hidden;
-	width: @tile-width - 4px;
-	height: @tile-width - 2px;
-	padding: 7px 8px;
-	text-align: center;
-	vertical-align: middle;
-	cursor: pointer;
-	&:nth-child(4n) {
-		margin-right: 2px;
+.card-group {
+	position: absolute;
+}
+
+.placeholder {
+	width: @card-width;
+	height: @card-height;
+	position: absolute;
+	//border: 1px solid white;
+	background-repeat: none;
+	background-position: left top;
+	background-size: 100%;
+	z-index: 0;
+	&.empty {
+		background-image: url('/img/base_redeal.png')
 	}
-
-	background-position: 8px 8px;
-	background-repeat: no-repeat;
-
-	&.bouncing {
-		-webkit-animation: flicker 1s ease-in infinite; /* Safari 4+ */
-		-moz-animation:    flicker 1s ease-in infinite; /* Fx 5+ */
-		-o-animation:      flicker 1s ease-in infinite; /* Opera 12+ */
-		animation:         flicker 1s ease-in infinite; /* IE 10+, Fx 29+ */
+	&.base-foundation {
+		background-image: url('/img/base_foundation.png')
 	}
 
-	&.hiding {
-		-webkit-animation: disapear 1s ease-in; /* Safari 4+ */
-		-moz-animation:    disapear 1s ease-in; /* Fx 5+ */
-		-o-animation:      disapear 1s ease-in; /* Opera 12+ */
-		animation:         disapear 1s ease-in; /* IE 10+, Fx 29+ */
-	}
-
-	&.showing {
-		-webkit-animation: show-ball .5s steps(9); /* Safari 4+ */
-		-moz-animation:    show-ball .5s steps(9); /* Fx 5+ */
-		-o-animation:      show-ball .5s steps(9); /* Opera 12+ */
-	 	animation:         show-ball .5s steps(9); /* IE 10+, Fx 29+ */
+	&.base-tableau {
+		margin: -20px;
+		top: 20px;
+		border: 1px solid white;
 	}
 }
-
-@-webkit-keyframes show-ball {
-	0% {background-position-y: @anim-width * 9}
-  	100% {background-position-y: 0}
-}
-@-moz-keyframes show-ball {
-  	0% {background-position-y: @anim-width * 9}
-  	100% {background-position-y: 0}
-}
-@-o-keyframes show-ball {
-  	0% {background-position-y: @anim-width * 9}
-  	100% {background-position-y: 0}
-}
-@keyframes show-ball {
-  0% {background-position-y: @anim-width * 9}
-  	100% {background-position-y: 0}
-}
-
-
-@-webkit-keyframes flicker {
-	0% {opacity: 0.2}
-	50% {opacity: 0.5}
-  	100% {opacity: 1}
-  	50% {opacity: 0.5}
-  	0% {opacity: 0.2}
-}
-@-moz-keyframes flicker {
-  	0% {opacity: 0.2}
-  	50% {opacity: 0.5}
-  	100% {opacity: 1}
-  	50% {opacity: 0.5}
-  	0% {opacity: 0.2}
-}
-@-o-keyframes flicker {
-  	0% {opacity: 0.2}
-  	50% {opacity: 0.5}
-  	100% {opacity: 1}
-  	50% {opacity: 0.5}
-  	0% {opacity: 0.2}
-}
-@keyframes flicker {
-  	0% {opacity: 0.2}
-  	50% {opacity: 0.5}
-  	100% {opacity: 1}
-  	50% {opacity: 0.5}
-  	0% {opacity: 0.2}
-}
-
-
-@-webkit-keyframes disapear {
-	0% {opacity: 1}
-  	100% {opacity: 0}
-}
-@-moz-keyframes disapear {
-  	0% {opacity: 1}
-  	100% {opacity: 0}
-}
-@-o-keyframes disapear {
-  	0% {opacity: 1}
-  	100% {opacity: 0}
-}
-@keyframes disapear {
-  	0% {opacity: 1}
-  	100% {opacity: 0}
-}
-

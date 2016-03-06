@@ -21,7 +21,8 @@ module.exports = {
 			        path.resolve(__dirname, "src"),
 			    ],
 				query: {
-					presets: ['es2015', 'react', 'stage-0']
+					plugins: ['transform-decorators-legacy'],
+					presets: ['es2015', 'react', 'stage-1']
 				}
 			},
 			{
