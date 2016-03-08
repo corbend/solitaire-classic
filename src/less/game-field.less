@@ -1,12 +1,13 @@
 body {
 	background: #93648d;
+	background-image: url('/img/dark_embroidery.png')
 }
 
 .game-field-wrapper {
 	text-align: center;
 	.title {
 		margin: 20px auto;
-		max-width: 760px;
+		max-width: 90%;
 		margin-top: 20px;
 		h1 {
 			color: white;
@@ -21,7 +22,7 @@ body {
 	}
 
 	.tools {
-		width: 400px;
+		width: 55%;
 		margin: 0 auto;
 		height: 40px;
 
@@ -63,37 +64,48 @@ body {
 }
 
 .game-field {
+
 	padding-bottom: 20px;
-	margin: 50px auto;	
-	border: 2px solid black;
-	box-shadow: 0 0px 20px grey;	
+	margin: 20px auto;		
 	width: @tile-width * 9 + 10px;
 	height: @tile-width * 9 + 10px;
-	background-image: url('/img/dark_embroidery.png')
-}
+	min-height: 600px;
 
-.next-balls {
-	padding: 14px;
-	padding-bottom: 20px;
-}
-
-.next-line {
-	position: absolute;
-	left: 50%;
-	width: 100px;
-	top: 230px;
-	color: white;
-	background: grey;
-	border-radius: 4px;
-	border: 1px solid black;
-
-	&.left {
-		margin-left: -400px;
-	}	
-
-	&.right {
-		margin-left: 300px;
+	.board {
+		border: 2px solid black;
+		box-shadow: 0 0px 20px grey;
+		margin: 0 auto;
+		position: relative;
+		background-color: #419c71;
 	}
+}
+
+.game-type-selector {
+	float: left;
+	
+	select {
+		width: 300px;
+		font-size: 1em;
+		text-align: center;
+		color: black;
+		border: 1px solid grey;
+		background-image: none;
+		background: none;
+		border-radius: 4px;
+		padding: 3px 20px;
+
+		option:hover {
+			color: darkgrey;
+		}
+	}
+}
+
+.moves-counter {
+	float: right;
+	color: white;
+	font-size: 1em;
+	padding: 10px 20px;
+	margin-top: -40px;
 }
 
 .footer {
@@ -107,8 +119,4 @@ body {
 	font-size: 2em;
 	font-weight: 800;
 	height: 300px;
-}
-
-.balls-counter, .empty-counter {
-	height: 104px;
 }

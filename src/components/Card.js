@@ -27,20 +27,18 @@ const cardSource = {
 		parent = child;
 		child = child.child;				
 	}
+
 	return canDrag;
   },
   beginDrag(props) {
-
-    return !props.final && {
-      type: props.type
-    };
+    return !props.final && props;
   },
 
   endDrag(props, monitor) {
     const item = monitor.getItem();
     const dropResult = monitor.getDropResult();
     if (dropResult) {
-	    //console.log("drop", item, props, dropResult);
+	    console.log("drop", item, props, dropResult);
 	    if (props.onDrop) {
 	    	props.onDrop(item, dropResult.position, dropResult);
 	    }

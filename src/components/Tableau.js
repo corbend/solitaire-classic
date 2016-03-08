@@ -15,7 +15,7 @@ export default class Tableau extends React.Component {
 	}
 	render() {		
 		
-		let columns = 7;
+		let columns = this.props.columns;
 		let columnCounter = 1;
 		let stocks = [];
 		let total = 0;
@@ -39,13 +39,20 @@ export default class Tableau extends React.Component {
 			))
 		})			
 
-		let placeholders = [1, 2, 3, 4, 5, 6, 7].map((_, index) => {
+		let placeholdersRange = [];
+		for (let c = 0; c < columns; c++) {
+			placeholdersRange.push(c);
+		}
+
+		let placeholders = placeholdersRange.map((_, index) => {
 			let placeholderItems = [];
-			return (<Placeholder items={placeholderItems} key={index} type="base-tableau" x={index}/>)
+			return (<Placeholder items={placeholderItems} key={index} type="tableau" x={index}/>)
 		});
 
+		let cls = ["tableau", this.props.type].join(" ")
+
 		return (
-			<div className="tableau">
+			<div className={cls}>
 				{placeholders}
 				{stocks}
 			</div>

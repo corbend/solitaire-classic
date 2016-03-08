@@ -4,12 +4,11 @@
 @g-padding: 20px;
 
 .foundation {
-	top: @g-padding;
+	top: 10px;
 	width: (@card-width + @card-gap) * 4 + @card-gap;
 	right: @g-padding;
 	height: @card-height;
 	position: absolute;
-	//border: 1px solid black;
 }
 
 .tableau {
@@ -18,7 +17,10 @@
 	right: @g-padding;
 	height: 350px;
 	position: absolute;
-	//border: 1px solid black;
+
+	&.freecell {
+		right: 140px;
+	}
 }
 
 .stock {
@@ -26,7 +28,6 @@
 	position: absolute;
 	height: @card-height;
 	top: @g-padding;
-	//border: 1px solid black;
 	left: @g-padding;
 }
 
@@ -35,7 +36,6 @@
 	position: absolute;
 	height: @card-height;
 	top: @g-padding;
-	//border: 1px solid black;
 	left: @card-width + 2 * @card-gap;
 }
 
@@ -43,7 +43,6 @@
 	width: @card-width;
 	height: @card-height;
 	position: absolute;
-	//border: 1px solid white;
 	background-repeat: none;
 	background-position: left top;
 	background-size: 100%;
@@ -62,17 +61,21 @@
 	background-repeat: none;
 	background-position: left top;
 	background-size: 100%;
+	border-radius: 4px;
 	z-index: 0;
 	&.empty {
-		background-image: url('/img/base_redeal.png')
+		background-image: url('/img/base_redeal.png');
 	}
-	&.base-foundation {
-		background-image: url('/img/base_foundation.png')
+	&.foundation {
+		background-image: url('/img/base_foundation.png');
 	}
-
-	&.base-tableau {
-		margin: -20px;
+	&.tableau {
+		margin: -21px;
 		top: 20px;
 		border: 1px solid white;
+	}
+	&.freecell {
+		margin-top: 20px;
+		background-image: url('/img/base.png');
 	}
 }

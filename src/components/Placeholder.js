@@ -4,12 +4,16 @@ import Card from './Card';
 
 
 const dropFoundationTarget = {
+  canDrop(props) {
+  	return true;
+  },
   drop(target) {
   	//console.log("drop to", arguments);
     return { 
-    	name: target.type == "base-tableau" ? "tableau" : 'foundation', 
+    	name: target.type, 
     	target: {type: 'placeholder'}, 
-    	position: target.x};
+    	position: target.x
+    };
   }
 };
 
@@ -36,8 +40,9 @@ export default class Placeholder extends React.Component {
 		}
 
 		let cards = this.props.items && this.props.items.map((c) => {
+			let onDrop = this.props.onDrop && this.props.onDrop.bind(this);
 			return (
-				<Card key={c.type} type={c.type} />
+				<Card onDrop={onDrop} drag={this.props.draggable} key={c.type} type={c.type} />
 			)
 		}) || [];
 

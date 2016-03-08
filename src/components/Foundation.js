@@ -15,7 +15,7 @@ export default class Foundation extends React.Component {
 
 			let placeholderItems = this.props.items.filter((c) => c.finalPosition == _)
 			//console.log("items to placeholder", _, placeholderItems);
-			return (<Placeholder items={placeholderItems} key={index} type="base-foundation" x={index}/>)
+			return (<Placeholder items={placeholderItems} key={index} type="foundation" x={index}/>)
 		});
 
 		return (

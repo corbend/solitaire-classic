@@ -7,6 +7,13 @@ import Tableau from './components/Tableau';
 import Waste from './components/Waste';
 import Stock from './components/Stock';
 import Foundation from './components/Foundation';
+import Placeholder from './components/Placeholder';
+
+import FreeCell from './components/FreeCell';
+
+import FreeCellLogic from './logic/freecell';
+import KlondikeLogic from './logic/klondike';
+import SpiderLogic from './logic/spider';
 
 require('./less/style.less');
 
@@ -29,18 +36,20 @@ export default class App extends React.Component {
 		this.gameName = "SOLITAIRE";
 
 		this.state = {
+			movesCounter: 0,
 			foundationItems: [],
 			stockItems: [],
 			tableauItems: [],
-			wasteItems: []
+			wasteItems: [],
+			freeCellItems: []
 		}
 
 	}
 	setFieldSize() {		
 		let field = document.querySelector(".game-field");
 		if (field) {
-			field.style.width =  "70%";
-			//field.style.height = "600px";
+			field.style.width =  "90%";
+			field.style.height = "750px";
 		}
 	}
 	shuffleFY(array) {
@@ -68,16 +77,14 @@ export default class App extends React.Component {
 	newGame(reset) {
 
 		let startGame = () => {
-
 			this.prepareCards();
 			this.setState({
+				gameType: this.state.gameType,
 				end: false,
 				reset: false,
 				startGame: true,
 				stopGame: false
 			});
-
-			this.getNext();
 		}
 
 		if (reset) {
@@ -116,32 +123,12 @@ export default class App extends React.Component {
 		}
 
 	}
-	changeState() {
-				
-	}
-	onNextClick() {
-		if (!this.screenLock) {
-			this.getNext();
-		}
-	}
-	getNext() {
-
-		if (this.state.end) {
-			return;
-		};
-
-		this.setScreenLock(true);
-		//add new balls
-		this.changeState();
-	}
 	onSaveClick() {
 
 	}
-	prepareCards() {
+	getCards() {
 
-		let stockItems = [];
-		let tableauItems = [];
-
+		let freeItems = [];
 		let counter = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, '11', '12', '13'];
 		let face = ['s', 'h', 'c', 'd'];
 
@@ -155,59 +142,31 @@ export default class App extends React.Component {
 			});
 		})
 
-		let freeItems = [];
 
 		this.allCards.forEach((c) => {
 			freeItems.push(c);
 		})
 
-		
-		//tableau
-		let ct = 1;
-		for (let x = 0; x < 7; x++) {
-
-			let parent = null;
-			for (let y = 0; y < ct; y++) {
-				let card = this.shuffleFY(freeItems)[0];
-			
-				freeItems.splice(freeItems.indexOf(card), 1);
-				card.x = x;
-				card.y = y;
-				card.columnIndex = y;
-
-				if (y == ct - 1) {
-					card.hide = false;
-				} else {
-					card.hide = true;
-				}
-				//FIXME - test
-				card.hide = false;
-
-				if (parent) {
-					parent.child = card;
-				}
-
-				parent = card;	
-				tableauItems.push(card);
-			}
-
-			ct++;
+		return freeItems;
+	}
+	getEngine() {
+		let engine;
+		switch (this.state.gameType || "Klondike") {
+			case "Klondike":
+				engine = new KlondikeLogic();
+				break;
+			case "Free Cell":
+				engine = new FreeCellLogic();
+				break;
+			case "Spider":
+				engine = new SpiderLogic();
+				break;
 		}
 
-		//stock
-		let stockItemsCount = freeItems.length;
-		for (let c = 0; c < stockItemsCount; c++) {
-
-			let card = this.shuffleFY(freeItems)[0];
-			freeItems.splice(freeItems.indexOf(card), 1);
-			stockItems.push(card);
-		}
-
-		this.setState({
-			tableauItems,
-			stockItems
-		});
-
+		return engine;
+	}
+	prepareCards() {
+		return this.setState(this.getEngine().prepareCards(this.getCards(), this.shuffleFY));
 	}
 	onClickStock(pile) {
 		console.log("add to waste", pile);
@@ -227,182 +186,76 @@ export default class App extends React.Component {
 	}
 	onDropTo(card, position, dropTarget, from) {
 
-		let tableauCopy = this.state.tableauItems.slice();
-		let stockCopy = this.state.stockItems.slice();
-		let wasteCopy = this.state.wasteItems.slice();
-		let foundationItems = this.state.foundationItems.slice();
-
-		let source = null;
-		let sourceIndex = null;
-		let target = null;
-		let parent = null;
-
-		let sourceCollection = null;
-		let sourceCollectionCopy = null;		
-		let targetCollection = null;
-		let clearCollections = [];
-
-		let to = dropTarget.name;
-		let removeSource = false;
-		let finalizeSource = false;
-		let mustClearChild = false;
-		let mustRearange = from == to;
-		let onlyLeaf = false;
-		let refill = false;
-
-		if (from == "tableau") {
-			sourceCollection = this.state.tableauItems;
-			sourceCollectionCopy = tableauCopy;
-			mustClearChild = true;
-		} else if (from == "waste") {
-			sourceCollection = this.state.wasteItems;
-			sourceCollectionCopy = wasteCopy;	
+		//save for undo move
+		this.onSaveMove();
+		let nextState = this.getEngine().handleMove(this.state, card, position, dropTarget, from);
+		if (nextState) {
+			this.setState(nextState);
+		} else {
+			this.setEndGameState();
 		}
+	}
+	bruteForceGenerator() {
+		//TODO
+	}
+	solveGame() {
+		//TODO
+	}
+	onHintClick() {
+		let pairs = {};
 
-		if (to == "foundation") {
-			removeSource = true;
-			finalizeSource = true;
-			targetCollection = foundationItems;
-			onlyLeaf = true;
-		} else if (to == "tableau") {
-			if (from == "waste") {
-				removeSource = true;	
-			}
-			targetCollection = tableauCopy;
-		}
+		this.state.tableauItems.forEach(() => {
 
-		sourceCollection.forEach((i, index) => {
-			if (i.type == card.type) {
-				source = i;
-				sourceIndex = index;
-				console.log("SOURCE", card, sourceIndex);
-			}
 		});
-		//validation
-		if (onlyLeaf && source.child) {		
-			console.warn("must copy only leaf cards");	
-			return;
-		}
-
-		if (to == "tableau" && dropTarget.target.type == "placeholder") {
-			if (parseInt(source.type) != 13) {
-				console.warn("not king");
-				return;
-			}
-		}
-
-		if (to == "tableau" && dropTarget.target.type != "placeholder") {
-			let sourceNominal = parseInt(source.type);
-			let targetNominal = parseInt(dropTarget.target.top.type);
-			let sourceType = source.type.slice(-1);
-			let targetType = dropTarget.target.top.type.slice(-1);
-
-			let sType = ['s', 'c'].indexOf(sourceType);
-			let tType = ['s', 'c'].indexOf(targetType);
-
-			if ((sType == -1 && tType == -1) || (sType != -1 && tType != -1)) {
-				console.warn("type illegal", sourceType, targetType);
-				return;
-			}
-
-			if (sourceNominal != targetNominal - 1) {
-				console.warn("nominal illegal", sourceNominal, targetNominal);
-				return;
-			}
-		}
-
-		if (to == "foundation") {
-			let sourceNominal = parseInt(source.type);
-			let sourceType = source.type.slice(-1);		
-			let cardsByType = this.state.foundationItems.filter((c) => c.type.slice(-1) == sourceType).slice(-1);
-			let lastCardNom = (cardsByType[0] && parseInt(cardsByType[0].type)) || 0;
-			console.log("validate foundation", sourceNominal, sourceType, lastCardNom + 1);
-			if ((!cardsByType[0] && lastCardNom > 1) || sourceNominal != lastCardNom + 1) {
-				console.warn("foundation drop failed");
-				return;
-			}		
-		}
-
-		console.log("FROM", from, "->", to);
-
-		if (mustClearChild) {
-			console.log("PARENT ->");
-			sourceCollection.forEach((i, index) => {
-				if (i.child && i.child.type == source.type) {						
-					console.log("CLEAR CHILD", i);
-					i.hide = false;
-					i.child = null;
-				}
-			});
-		}
-
-		if (removeSource) {
-			console.log("REMOVE", sourceCollectionCopy);
-			sourceCollectionCopy.splice(sourceIndex, 1);
-		}
-
-		if (finalizeSource) {
-			console.log("FINALIZE");
-			source.final = true;
-			source.finalPosition = position + 1;
-		}
-
-		if (targetCollection) {
-
-			if (!mustRearange) {
-				console.log("COPY TO", source);
-				targetCollection.push(source);
-			}
-
-			let siblings = [];
-
-			let child = source.child;
-			while (child) {
-				siblings.push(child);
-				child = child.child;
-			}
-
-			if (dropTarget.target.type == "placeholder") {
-
-				siblings.forEach((s, index) => {
-					s.x = dropTarget.position;
-					s.y = index + 1;
-				});
-
-				source.x = dropTarget.position;
-				source.y = 0;
-
-				console.log("PUT TO -> PLACE", dropTarget.position);
-
-			} else {
-
-				targetCollection.forEach((i, index) => {
-
-					if (i.type == dropTarget.target.top.type && !i.child) {
-
-						siblings.forEach((s, index) => {
-							s.x = i.x;
-							s.y = i.y + index + 2;
-						});
-						source.x = i.x;
-						source.y = i.y + 1;
-
-						i.child = source;					
-
-						console.log("PUT TO -> CARD", i);
-					}
-
-				});
-		
-			}
-		}
+	}
+	onUndoClick() {
+		this.setState(this.state.prevStateSnapshot);
+	}
+	onSaveMove(source, target) {
+		let key = `solitaire.${this.state.gameType}`;
+		let moveConfig = JSON.stringify(this.state);
+		window.localStorage.setItem(key, moveConfig);
 
 		this.setState({
-			tableauItems: tableauCopy,
-			stockItems: stockCopy,
-			wasteItems: wasteCopy,
-			foundationItems: foundationItems
+			prevStateSnapshot: this.state
 		})
+	}
+	renderField() {
+		switch (this.state.gameType) {
+			case "Klondike":
+				return (
+					<div className="game-field" style={{position: 'relative'}}>	
+						<div className="board" style={{width: "90%", height: "750px"}}>
+							<Stock onClickStock={this.onClickStock.bind(this)} onRepeatStockClick={this.onRepeatStock.bind(this)} items={this.state.stockItems}/>
+							<Foundation items={this.state.foundationItems}/>	
+							<Tableau columns={7} type={"klondike"} items={this.state.tableauItems} onDrop={this.onDropTo.bind(this)}/>
+							<Waste items={this.state.wasteItems} onDrop={this.onDropTo.bind(this)}/>
+						</div>
+					</div>
+				)
+			case "Free Cell":
+				return (
+					<div className="game-field" style={{position: 'relative'}}>
+						<div className="board" style={{width: "992px", height: "750px"}}>
+							<FreeCell items={this.state.freeCellItems} onDrop={this.onDropTo.bind(this)}/>
+							<Foundation items={this.state.foundationItems}/>	
+							<Tableau columns={8} type={"freecell"} items={this.state.tableauItems} onDrop={this.onDropTo.bind(this)}/>
+						</div>
+					</div>
+				)
+			case "Spider":
+				break;
+			case "Castle":
+				break;
+		}
+	}
+	onSelectGameType(event) {
+		this.setState({
+			gameType: event.target.value
+		});
+		setTimeout(() => {
+			this.newGame();
+		});			
 	}
 	render() {
 		let top = 0;
@@ -413,25 +266,29 @@ export default class App extends React.Component {
 
 		if (this.state.start) {
 
-			let btnCls = (this.screenLock && "disabled") || "";
 			let self = this;
 			gameScreen = (
 				<div>
+
 					<div className="title">
 						<h1>{this.gameName}</h1>
+						<div className="game-type-selector">
+							<select onChange={this.onSelectGameType.bind(this)}>
+								<option value="Klondike">Klondike</option>
+								<option value="Free Cell">Free Cell</option>
+								<option value="Spider">Spider</option>
+								<option value="Castle">Castle</option>
+							</select>
+						</div>
 						<div className="tools">
-							<button className={btnCls} onClick={this.resetGame.bind(this)}>Reset</button>
-							<button className={btnCls} onClick={this.onSaveClick.bind(this)}>Save</button>														
-						</div>			
+							<button onClick={this.onUndoClick.bind(this)}>Undo</button>	
+							<button onClick={this.resetGame.bind(this)}>Reset</button>
+							<button onClick={this.onSaveClick.bind(this)}>Save</button>
+							<button onClick={this.onHintClick.bind(this)}>Hint</button>														
+						</div>
+						<div className="moves-counter">Moves: <span>{this.state.movesCounter}</span></div>
 					</div>
-					<div className="game-field" style={{position: 'relative'}}>	
-						<Stock onClickStock={this.onClickStock.bind(this)} onRepeatStockClick={this.onRepeatStock.bind(this)} items={this.state.stockItems}/>
-						<Foundation items={this.state.foundationItems}/>
-						<Tableau items={this.state.tableauItems} onDrop={this.onDropTo.bind(this)}/>
-						<Waste items={this.state.wasteItems} onDrop={this.onDropTo.bind(this)}/>
-					</div>
-					<span>Stock {this.state.stockItems.length}</span><br></br>
-					<span>Waste {this.state.wasteItems.length}</span>
+					{this.renderField.bind(this)()}
 				</div>
 			)
 			setTimeout(() => {
