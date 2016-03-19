@@ -7,28 +7,7 @@ import CardGroup from './CardGroup';
 const cardSource = {
 
   canDrag(props) {
-  	let child = props.child;
-	let parent = props;
-	let canDrag = props.drag;
-	while (child) {
-
-		let selfType = ['s', 'c'].indexOf(parent.type.slice(-1)) == -1;
-		let selfNominal = parseInt(parent.type);
-		if (child) {
-			let childType = ['s', 'c'].indexOf(child.type.slice(-1)) == -1;
-			let childNominal = parseInt(child.type);
-			canDrag = (childType != selfType && selfNominal == childNominal + 1)
-			if (!canDrag) {
-				console.warn("illegal chain", selfType, childType, selfNominal, childNominal);
-				break;
-			}
-		}
-
-		parent = child;
-		child = child.child;				
-	}
-
-	return canDrag;
+	return props.checkDrag(props);
   },
   beginDrag(props) {
     return !props.final && props;
@@ -40,7 +19,7 @@ const cardSource = {
     if (dropResult) {
 	    console.log("drop", item, props, dropResult);
 	    if (props.onDrop) {
-	    	props.onDrop(item, dropResult.position, dropResult);
+	    	return props.onDrop(item, dropResult.position, dropResult);
 	    }
     }
   }
@@ -82,7 +61,7 @@ export default class Card extends React.Component {
 			position: 'absolute',
 			top: (this.props.y * 30) + "px",
 			left: (this.props.x * (99 + 20)) + "px",
-			opacity: (isDragging && canDrag) ? 0.5 : 1,
+			//opacity: (isDragging && canDrag) ? 0.5 : 1,
 			zIndex: this.props.zIndex
 		}
 

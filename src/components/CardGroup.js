@@ -27,13 +27,14 @@ export default class CardGroup extends React.Component {
 
 		const { canDrop, isOver, connectDropTarget } = this.props;
 
-		let cards = this.props.items.map((card) => {
+		let cards = this.props.items.map((card, index) => {
 			//console.log("card group", card);
 			let cardStyle = {
 			 	top: (card.y * 30) + "px"
 			}
+			let cardKey = card.type + "#" + index;
 			return (
-				<Card style={cardStyle} key={card.type} type={card.type} />
+				<Card style={cardStyle} key={cardKey} type={card.type} />
 			)
 		});
 
@@ -43,7 +44,7 @@ export default class CardGroup extends React.Component {
 
 		let topCardStyle = {
 			backgroundImage: ("url(/img/" + cardImage + ')'),
-			opacity: this.props.isDragging ? 0.5 : 1,
+			//opacity: this.props.isDragging ? 0.5 : 1,
 			zIndex: this.props.style.zIndex
 		}
 

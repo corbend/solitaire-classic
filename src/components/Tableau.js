@@ -11,10 +11,10 @@ export default class Tableau extends React.Component {
 		}
 	}
 	onDrop(card, position, dropTarget) {
-		this.props.onDrop(card, position, dropTarget, "tableau");
+		return this.props.onDrop(card, position, dropTarget, "tableau");
 	}
 	render() {		
-		
+
 		let columns = this.props.columns;
 		let columnCounter = 1;
 		let stocks = [];
@@ -30,11 +30,14 @@ export default class Tableau extends React.Component {
 				}
 			});
 
+			let cardKey = c.type + "#" + index;
+
 			stocks.push((
-				<Card drop={draggable} zIndex={c.y} key={c.type} leaf={isLeaf} drag={draggable} 
+				<Card checkDrag={this.props.checkDrag} drop={draggable} zIndex={c.y} key={cardKey} leaf={isLeaf} drag={draggable} 
 					child={c.child}
 					type={c.type} hide={c.hide} 
-					x={c.x} y={c.y} 
+					x={c.x} y={c.y}
+					index={c.index}
 					onDrop={this.onDrop.bind(this)}/>
 			))
 		})			

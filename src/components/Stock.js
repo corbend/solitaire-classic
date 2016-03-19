@@ -8,54 +8,38 @@ export default class Stock extends React.Component {
 	constructor(props) {
 		super(props);
 		this.state = {
-			//selectedPile: [],
 			items: props.items,
-			//reservedItems: []
 		}
 	}
 	onClickPile(card) {
-
-		let selectedPile = [];
-		//let reservedItems = this.state.reservedItems;
-		let stockItems = this.props.items;//.filter((i) => this.state.reservedItems.indexOf(i) == -1);
-		for (let n = 0; n < 3; n++) {
-
-			if (stockItems.length) {
-				let c = stockItems.pop();
-				selectedPile.push(c);
-				//reservedItems.push(c);
-			}
-		}
-
-		let state = {			
-			//selectedPile,
-			stockItems
-		}
-
-		this.setState(state);
-		//console.log("add waste", selectedPile);
-		this.props.onClickStock(selectedPile);
-
+		this.props.onClickStock(this.props, card);
 	}
-	repeat() {			
-		this.props.onRepeatStockClick();
+	repeat() {
+		if (this.props.onRepeatStockClick) {
+			this.props.onRepeatStockClick();
+		}
 	}
 	render() {
 
 		let items = this.props.items;//.filter((c) => this.state.reservedItems.indexOf(c) == -1);
+		let noDrag = () => {return false};
 
 		let stocks = items.map((c, index) => {		
+			let cardKey = c.type + "#" + index;
 			if (index == items.length - 1) {
-				return (<Card drop={false} key={c.type} type={c.type} hide={true} onClickCard={(e) => {e.stopPropagation(); this.onClickPile(c)}}/>)
+				return (<Card checkDrag={noDrag} drop={false} key={cardKey} index={c.index} type={c.type} hide={true} onClickCard={(e) => {e.stopPropagation(); this.onClickPile(c)}}/>)
 			} else {		
-				return (<Card drop={false} key={c.type} type={c.type} hide={true} />)
+				return (<Card checkDrag={noDrag} drop={false} key={cardKey} index={c.index} type={c.type} hide={true} />)
 			}
 		
 		});
 
+		let emptyIcon = "empty";
+
+		console.log("stock length", stocks.length);
 		return (
 			<div className="stock">
-				<Placeholder type="empty" onClickPlaceholder={this.repeat.bind(this)}/>
+				<Placeholder type={emptyIcon} onClickPlaceholder={this.repeat.bind(this)}/>
 				{stocks}
 			</div>
 		)

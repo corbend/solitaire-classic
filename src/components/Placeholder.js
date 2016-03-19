@@ -42,7 +42,7 @@ export default class Placeholder extends React.Component {
 		let cards = this.props.items && this.props.items.map((c) => {
 			let onDrop = this.props.onDrop && this.props.onDrop.bind(this);
 			return (
-				<Card onDrop={onDrop} drag={this.props.draggable} key={c.type} type={c.type} />
+				<Card onDrop={onDrop} drag={this.props.draggable} index={c.index} key={c.type} type={c.type} />
 			)
 		}) || [];
 

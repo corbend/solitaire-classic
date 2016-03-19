@@ -202,6 +202,31 @@ export default class FreeCellLogic {
 			}
 		}
 	}
+	handleDrag(props) {
+		let child = props.child;
+		let parent = props;
+		let canDrag = props.drag;
+
+		while (child) {
+
+			let selfType = ['s', 'c'].indexOf(parent.type.slice(-1)) == -1;
+			let selfNominal = parseInt(parent.type);
+			if (child) {
+				let childType = ['s', 'c'].indexOf(child.type.slice(-1)) == -1;
+				let childNominal = parseInt(child.type);
+				canDrag = (childType != selfType && selfNominal == childNominal + 1)
+				if (!canDrag) {
+					console.warn("illegal chain", selfType, childType, selfNominal, childNominal);
+					break;
+				}
+			}
+
+			parent = child;
+			child = child.child;				
+		}
+
+		return canDrag;
+	}
 	prepareCards(cards, shuffleFn) {
 		let stockItems = [];
 		let tableauItems = [];

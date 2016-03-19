@@ -67,7 +67,8 @@ export default class App extends React.Component {
 	resetGame() {
 		this.newGame(true);
 	}
-	setEndGameState(reset) {		
+	setEndGameState(reset) {
+		debugger;	
 		this.setState({
 			end: true,
 			reset: reset,
@@ -82,6 +83,7 @@ export default class App extends React.Component {
 				gameType: this.state.gameType,
 				end: false,
 				reset: false,
+				movesCounter: 0,
 				startGame: true,
 				stopGame: false
 			});
@@ -168,15 +170,8 @@ export default class App extends React.Component {
 	prepareCards() {
 		return this.setState(this.getEngine().prepareCards(this.getCards(), this.shuffleFY));
 	}
-	onClickStock(pile) {
-		console.log("add to waste", pile);
-		this.setState({
-			wasteItems: this.state.wasteItems.concat(pile)
-		});
-
-		this.setState({
-			stockItems: this.state.stockItems.filter((x) => pile.indexOf(x) == -1)
-		})
+	onClickStock(props) {		
+		return this.setState(this.getEngine().handleZoneClick(this.state, props, "stock"));
 	}
 	onRepeatStock() {
 		this.setState({
@@ -184,14 +179,28 @@ export default class App extends React.Component {
 			wasteItems: []
 		})
 	}
+	onDrag(props) {
+		if (props.hide) return false;
+		else {
+			return this.getEngine().handleDrag(props);
+		}
+	}
 	onDropTo(card, position, dropTarget, from) {
 
 		//save for undo move
 		this.onSaveMove();
+
+		if (card.hide) return false;
+
 		let nextState = this.getEngine().handleMove(this.state, card, position, dropTarget, from);
-		if (nextState) {
+		
+		let end1 = typeof nextState == "object" && nextState.end;
+		let end2 = typeof nextState == "boolean" && !nextState;
+
+		if (typeof nextState == "object" && (!end1 && !end2)) {
 			this.setState(nextState);
-		} else {
+		} else if (end1 || end2) {
+			this.setState(nextState);
 			this.setEndGameState();
 		}
 	}
@@ -221,14 +230,15 @@ export default class App extends React.Component {
 		})
 	}
 	renderField() {
+		
 		switch (this.state.gameType) {
-			case "Klondike":
+			case "Klondike":				
 				return (
 					<div className="game-field" style={{position: 'relative'}}>	
 						<div className="board" style={{width: "90%", height: "750px"}}>
 							<Stock onClickStock={this.onClickStock.bind(this)} onRepeatStockClick={this.onRepeatStock.bind(this)} items={this.state.stockItems}/>
 							<Foundation items={this.state.foundationItems}/>	
-							<Tableau columns={7} type={"klondike"} items={this.state.tableauItems} onDrop={this.onDropTo.bind(this)}/>
+							<Tableau checkDrag={this.onDrag.bind(this)} columns={7} type={"klondike"} items={this.state.tableauItems} onDrop={this.onDropTo.bind(this)}/>
 							<Waste items={this.state.wasteItems} onDrop={this.onDropTo.bind(this)}/>
 						</div>
 					</div>
@@ -239,12 +249,20 @@ export default class App extends React.Component {
 						<div className="board" style={{width: "992px", height: "750px"}}>
 							<FreeCell items={this.state.freeCellItems} onDrop={this.onDropTo.bind(this)}/>
 							<Foundation items={this.state.foundationItems}/>	
-							<Tableau columns={8} type={"freecell"} items={this.state.tableauItems} onDrop={this.onDropTo.bind(this)}/>
+							<Tableau checkDrag={this.onDrag.bind(this)} columns={8} type={"freecell"} items={this.state.tableauItems} onDrop={this.onDropTo.bind(this)}/>
 						</div>
 					</div>
 				)
-			case "Spider":
-				break;
+			case "Spider":				
+				return (
+					<div className="game-field" style={{position: 'relative'}}>
+						<div className="board" style={{width: "1258px", height: "750px"}}>
+							<Stock onClickStock={this.onClickStock.bind(this)} items={this.state.stockItems}/>
+							<Foundation placeholders={8} items={this.state.foundationItems}/>
+							<Tableau checkDrag={this.onDrag.bind(this)} columns={10} type={"spider"} items={this.state.tableauItems} onDrop={this.onDropTo.bind(this)}/>
+						</div>
+					</div>
+				)
 			case "Castle":
 				break;
 		}

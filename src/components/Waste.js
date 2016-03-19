@@ -19,19 +19,27 @@ export default class Waste extends React.Component {
 
 		let stocks = [];
 		let cnt = 1;
+		let noCheck = () => {return true};
+		let noDrag = () => {return false};
 
 		stocks = this.props.items.map((c, index) => {
 			
 			let left = cnt > 0 ? (cnt - 1) * 0.2: 0;		
 			let card;
+			let cardKey = c.type + "#" + index;
+
 			if (index == this.props.items.length - 1) {
 
-				card = (<Card x={left} zIndex={Math.round(left * 100)} key={c.type} type={c.type} hide={false} 
-					drag={true} drop={false}
-					onDrop={this.onDrop.bind(this)} 
-					onClickCard={() => this.onClickPile(c)}/>)
+				card = (
+					<Card checkDrag={noCheck} x={left} zIndex={Math.round(left * 100)} key={cardKey} type={c.type} hide={false} 
+						drag={true} drop={false} index={c.index}
+						onDrop={this.onDrop.bind(this)} 
+						onClickCard={() => this.onClickPile(c)}/>)
 			} else {
-				card = (<Card zIndex={Math.round(left * 100)} drop={false} x={left} key={c.type} type={c.type} hide={false} />)
+				card = (
+					<Card checkDrag={noDrag} zIndex={Math.round(left * 100)} 
+						index={c.index} 
+						drop={false} x={left} key={cardKey} type={c.type} hide={false} />)				
 			}
 
 			if ((this.props.items.length - index) <= 3) {

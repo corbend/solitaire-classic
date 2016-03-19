@@ -1,6 +1,53 @@
 
 export default class KlondikeLogic {
 
+	handleZoneClick(state, props, zone) {
+
+		if (zone == "stock") {
+			let selectedPile = [];		
+			let stockItems = props.items;
+
+			for (let n = 0; n < 3; n++) {
+
+				if (stockItems.length) {
+					let c = stockItems.pop();
+					selectedPile.push(c);
+				}
+			}
+
+			return {
+				stockItems,
+				wasteItems: state.wasteItems.concat(selectedPile),
+				stockItems: state.stockItems.filter((x) => selectedPile.indexOf(x) == -1)
+			};
+		}
+	}
+	handleDrag(props) {
+
+		let child = props.child;
+		let parent = props;
+		let canDrag = props.drag;
+
+		while (child) {
+
+			let selfType = ['s', 'c'].indexOf(parent.type.slice(-1)) == -1;
+			let selfNominal = parseInt(parent.type);
+			if (child) {
+				let childType = ['s', 'c'].indexOf(child.type.slice(-1)) == -1;
+				let childNominal = parseInt(child.type);
+				canDrag = (childType != selfType && selfNominal == childNominal + 1)
+				if (!canDrag) {
+					console.warn("illegal chain", selfType, childType, selfNominal, childNominal);
+					break;
+				}
+			}
+
+			parent = child;
+			child = child.child;				
+		}
+
+		return canDrag;
+	}
 	handleMove(state, card, position, dropTarget, from) {
 
 		let tableauCopy = state.tableauItems.slice();
@@ -57,13 +104,13 @@ export default class KlondikeLogic {
 		//validation
 		if (onlyLeaf && source.child) {		
 			console.warn("must copy only leaf cards");	
-			return;
+			return true;
 		}
 
 		if (to == "tableau" && dropTarget.target.type == "placeholder") {
 			if (parseInt(source.type) != 13) {
 				console.warn("not king");
-				return;
+				return true;
 			}
 		}
 
@@ -78,12 +125,12 @@ export default class KlondikeLogic {
 
 			if ((sType == -1 && tType == -1) || (sType != -1 && tType != -1)) {
 				console.warn("type illegal", sourceType, targetType);
-				return;
+				return true;
 			}
 
 			if (sourceNominal != targetNominal - 1) {
 				console.warn("nominal illegal", sourceNominal, targetNominal);
-				return;
+				return true;
 			}
 		}
 
@@ -95,7 +142,7 @@ export default class KlondikeLogic {
 			console.log("validate foundation", sourceNominal, sourceType, lastCardNom + 1);
 			if ((!cardsByType[0] && lastCardNom > 1) || sourceNominal != lastCardNom + 1) {
 				console.warn("foundation drop failed");
-				return;
+				return true;
 			}		
 		}
 
@@ -173,7 +220,9 @@ export default class KlondikeLogic {
 			}
 		}
 
-		if (state.foundationItems.length == 52) {
+		console.log(foundationItems.length);
+		if (foundationItems.length == 52) {
+			debugger;
 			return false;
 		} else {
 			return {
@@ -184,6 +233,9 @@ export default class KlondikeLogic {
 				foundationItems: foundationItems
 			}
 		}
+	}
+	wasteClick() {
+
 	}
 	prepareCards(cards, shuffleFn) {
 		//tableau
